@@ -3,231 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sky Blue Map Service</title>
+    <title>Kakao Map Service</title>
     <style>
-        /* CSS 스타일링: 하늘색 테마 */
+        /* 핵심 레이아웃: 1:3 분할 */
         :root {
-            --main-blue: #00aaff;
-            --light-blue: #e6f7ff;
-            --border-color: #bae7ff;
+            --point-blue: #0095ff;
+            --bg-blue: #f0f8ff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { height: 100%; font-family: 'Malgun Gothic', sans-serif; overflow: hidden; }
+        body, html { height: 100%; font-family: sans-serif; overflow: hidden; }
 
-        .container { display: flex; width: 100%; height: 100vh; }
+        .app-container { display: flex; width: 100%; height: 100vh; }
 
-        /* 왼쪽 사이드바 (25%) */
+        /* 왼쪽 검색 및 리스트 영역 */
         .sidebar {
             width: 350px;
-            height: 100%;
-            background-color: var(--light-blue);
-            border-right: 2px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            padding: 20px;
+            background: #fff;
+            border-right: 1px solid #d1e3f1;
+            z-index: 5;
         }
 
-        .search-container { margin-bottom: 20px; display: flex; gap: 5px; }
-        #keyword {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid var(--main-blue);
-            border-radius: 4px;
-        }
-        #search-btn {
-            padding: 10px 15px;
-            background-color: var(--main-blue);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
+        .search-header { padding: 20px; background: var(--bg-blue); border-bottom: 1px solid #d1e3f1; }
+        .search-box { display: flex; gap: 5px; }
+        .search-box input { flex: 1; padding: 10px; border: 1px solid var(--point-blue); border-radius: 4px; outline: none; }
+        .search-box button { padding: 10px 15px; background: var(--point-blue); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        #result-list {
-            flex: 1;
-            overflow-y: auto;
-            list-style: none;
-        }
-        #result-list li {
-            background: white;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        #result-list li:hover { background-color: #f0faff; border-color: var(--main-blue); }
-        .place-name { font-weight: bold; color: #0077cc; display: block; }
-        .address { font-size: 12px; color: #666; margin-top: 5px; }
+        #result-list { flex: 1; overflow-y: auto; }
+        .item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        .item:hover { background: var(--bg-blue); }
+        .item .title { font-weight: bold; color: #333; font-size: 15px; }
+        .item .addr { font-size: 13px; color: #777; margin-top: 4px; }
 
-        /* 오른쪽 지도 (75%) */
-        .map-area { flex: 1; position: relative; }
+        /* 오른쪽 지도 영역 */
+        .map-wrapper { flex: 1; position: relative; }
         #map { width: 100%; height: 100%; }
 
-        /* 내 위치 추적 버튼 */
-        #track-btn {
+        /* 위치 추적 플로팅 버튼 */
+        .gps-button {
             position: absolute;
             top: 20px;
             right: 20px;
             z-index: 10;
-            padding: 12px 20px;
-            background: white;
-            border: 2px solid var(--main-blue);
-            border-radius: 30px;
-            cursor: pointer;
+            padding: 12px 18px;
+            background: #fff;
+            border: 2px solid var(--point-blue);
+            border-radius: 50px;
             font-weight: bold;
-            color: var(--main-blue);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: var(--point-blue);
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        #track-btn.active {
-            background: var(--main-blue);
-            color: white;
-        }
+        .gps-button.active { background: var(--point-blue); color: #fff; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="sidebar">
-            <div class="search-container">
-                <input type="text" id="keyword" placeholder="장소, 맛집 검색..." onkeypress="if(event.keyCode==13) searchPlaces()">
-                <button id="search-btn" onclick="searchPlaces()">검색</button>
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="search-header">
+            <div class="search-box">
+                <input type="text" id="keyword" placeholder="장소 입력 후 엔터" onkeypress="if(event.keyCode==13) searchPlaces()">
+                <button onclick="searchPlaces()">검색</button>
             </div>
-            <ul id="result-list"></ul>
         </div>
+        <div id="result-list"></div>
+    </aside>
 
-        <div class="map-area">
-            <div id="map"></div>
-            <button id="track-btn" onclick="toggleTracking()">내 위치 추적 OFF</button>
-        </div>
-    </div>
+    <main class="map-wrapper">
+        <div id="map"></div>
+        <button id="track-btn" class="gps-button" onclick="toggleTracking()">내 위치 추적 꺼짐</button>
+    </main>
+</div>
 
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=cbbdd4b68f27b3ad77d20589390becce&libraries=services"></script>
-    
-    <script>
-        let map;
-        let ps; // 장소 검색 객체
-        let markers = []; // 검색 결과 마커 배열
-        let watchId = null; // 실시간 위치 추적 ID
-        let myMarker = null; // 내 위치 표시용 마커
+<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=cbbdd4b68f27b3ad77d20589390becce&libraries=services"></script>
 
-        // 1. 지도 초기화 및 현재 위치 설정
-        function init() {
-            const container = document.getElementById('map');
-            const options = {
-                center: new kakao.maps.LatLng(37.5668, 126.9786), // 서울시청 기본값
-                level: 5 // 확대 레벨 5
+<script>
+    let map;
+    let ps; // 장소 검색 객체
+    let markers = []; // 검색 결과 마커 관리 배열
+    let myLocationMarker = null; // 내 위치 마커
+    let watchId = null; // 실시간 추적 ID
+
+    // 1. 지도 생성 및 현재 위치 초기 중심 설정
+    function initMap() {
+        const container = document.getElementById('map');
+        const options = {
+            center: new kakao.maps.LatLng(37.5668, 126.9786), // 기본 서울시청
+            level: 5
+        };
+        map = new kakao.maps.Map(container, options);
+        ps = new kakao.maps.services.Places();
+
+        // 페이지 진입 시 위치 권한 확인 후 이동
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const moveLatLon = new kakao.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                map.setCenter(moveLatLon);
+                updateMyMarker(moveLatLon);
+            });
+        }
+    }
+
+    // 2. 키워드 검색 로직
+    function searchPlaces() {
+        const keyword = document.getElementById('keyword').value;
+        if (!keyword.trim()) return alert("장소를 입력해주세요!");
+
+        ps.keywordSearch(keyword, (data, status) => {
+            if (status === kakao.maps.services.Status.OK) {
+                displayPlaces(data);
+            } else {
+                alert("검색 결과가 없습니다.");
+            }
+        });
+    }
+
+    // 3. 검색 결과 마커 및 리스트 출력
+    function displayPlaces(places) {
+        const listEl = document.getElementById('result-list');
+        const bounds = new kakao.maps.LatLngBounds();
+        
+        listEl.innerHTML = '';
+        removeMarkers();
+
+        places.forEach((place, index) => {
+            const position = new kakao.maps.LatLng(place.y, place.x);
+            const marker = new kakao.maps.Marker({ position, map });
+            
+            markers.push(marker);
+            bounds.extend(position);
+
+            const item = document.createElement('div');
+            item.className = 'item';
+            item.innerHTML = `<div class="title">${place.place_name}</div>
+                              <div class="addr">${place.road_address_name || place.address_name}</div>`;
+            
+            // 리스트 아이템 클릭 시 해당 위치 이동
+            item.onclick = () => {
+                map.panTo(position);
+                map.setLevel(3);
             };
+            listEl.appendChild(item);
+        });
 
-            map = new kakao.maps.Map(container, options);
-            ps = new kakao.maps.services.Places();
+        // 모든 검색 결과가 보이도록 지도 범위 조정
+        map.setBounds(bounds);
+    }
 
-            // 접속 시 현재 위치 권한 요청
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    const currentPos = new kakao.maps.LatLng(lat, lng);
-                    map.setCenter(currentPos); // 현재 위치로 중심 이동
-                    drawMyMarker(currentPos); // 내 위치 마커 표시
-                }, () => {
-                    alert('위치 권한을 허용해주세요!');
-                });
-            }
+    // 4. 실시간 위치 추적 토글 기능
+    function toggleTracking() {
+        const btn = document.getElementById('track-btn');
+
+        if (watchId === null) {
+            if (!navigator.geolocation) return alert("GPS를 지원하지 않는 브라우저입니다.");
+            
+            btn.classList.add('active');
+            btn.innerText = "내 위치 추적 켜짐";
+
+            // watchPosition으로 실시간 좌표 감시
+            watchId = navigator.geolocation.watchPosition(position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const currentPos = new kakao.maps.LatLng(lat, lng);
+                
+                updateMyMarker(currentPos);
+                map.panTo(currentPos); // 사용자가 이동하면 지도도 부드럽게 이동
+            }, error => {
+                console.error(error);
+                stopTracking();
+            }, { enableHighAccuracy: true });
+        } else {
+            stopTracking();
         }
+    }
 
-        // 2. 장소 검색 함수
-        function searchPlaces() {
-            const keyword = document.getElementById('keyword').value;
-            if (!keyword.trim()) return alert('키워드를 입력하세요!');
+    function stopTracking() {
+        const btn = document.getElementById('track-btn');
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        btn.classList.remove('active');
+        btn.innerText = "내 위치 추적 꺼짐";
+    }
 
-            ps.keywordSearch(keyword, (data, status) => {
-                if (status === kakao.maps.services.Status.OK) {
-                    displayResults(data);
-                } else {
-                    alert('검색 결과가 없습니다.');
-                }
-            });
+    // 내 위치 마커 업데이트 (이미지 차별화)
+    function updateMyMarker(pos) {
+        if (myLocationMarker) {
+            myLocationMarker.setPosition(pos);
+        } else {
+            const image = new kakao.maps.MarkerImage(
+                'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+                new kakao.maps.Size(24, 35)
+            );
+            myLocationMarker = new kakao.maps.Marker({ position: pos, image, map });
         }
+    }
 
-        // 3. 검색 결과 표시
-        function displayResults(places) {
-            const listEl = document.getElementById('result-list');
-            const bounds = new kakao.maps.LatLngBounds();
-            listEl.innerHTML = '';
-            clearMarkers();
+    function removeMarkers() {
+        markers.forEach(m => m.setMap(null));
+        markers = [];
+    }
 
-            places.forEach((place) => {
-                const pos = new kakao.maps.LatLng(place.y, place.x);
-                const marker = new kakao.maps.Marker({ position: pos, map: map });
-                markers.push(marker);
-                bounds.extend(pos);
+    // 앱 기동
+    initMap();
+</script>
 
-                const li = document.createElement('li');
-                li.innerHTML = `<span class="place-name">${place.place_name}</span>
-                                <span class="address">${place.road_address_name || place.address_name}</span>`;
-                li.onclick = () => {
-                    map.panTo(pos);
-                    map.setLevel(3);
-                };
-                listEl.appendChild(li);
-            });
-            map.setBounds(bounds); // 결과가 모두 보이게 지도 조정
-        }
-
-        // 4. 실시간 위치 추적 토글
-        function toggleTracking() {
-            const btn = document.getElementById('track-btn');
-
-            if (watchId === null) {
-                // 추적 시작
-                if (navigator.geolocation) {
-                    watchId = navigator.geolocation.watchPosition(position => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        const currentPos = new kakao.maps.LatLng(lat, lng);
-                        
-                        map.panTo(currentPos); // 내 위치로 부드럽게 이동
-                        drawMyMarker(currentPos);
-                    });
-                    btn.innerText = "내 위치 추적 ON";
-                    btn.classList.add('active');
-                }
-            } else {
-                // 추적 중지
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-                btn.innerText = "내 위치 추적 OFF";
-                btn.classList.remove('active');
-            }
-        }
-
-        // 내 위치 마커 그리기
-        function drawMyMarker(pos) {
-            if (myMarker) {
-                myMarker.setPosition(pos);
-            } else {
-                myMarker = new kakao.maps.Marker({
-                    position: pos,
-                    map: map,
-                    image: new kakao.maps.MarkerImage(
-                        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-                        new kakao.maps.Size(24, 35)
-                    )
-                });
-            }
-        }
-
-        function clearMarkers() {
-            markers.forEach(m => m.setMap(null));
-            markers = [];
-        }
-
-        // 앱 시작
-        init();
-    </script>
 </body>
 </html>
